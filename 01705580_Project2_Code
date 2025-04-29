@@ -1,0 +1,1044 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#Setting up environment
+"""
+Created on Sun Dec  5 12:27:50 2021
+
+@author: hills
+"""
+#1
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+from datetime import datetime
+from mpl_toolkits import mplot3d
+import random as r
+
+#%% Guassian Integration
+#2
+
+def g(x): 
+    g = (math.exp((-x**2)/2))/np.sqrt(2*math.pi)
+    return g
+
+def intg(x0, x):
+    rx=math.erf(x/np.sqrt(2))/2
+    r0=math.erf(x0/np.sqrt(2))/2
+    r=rx-r0
+    return r
+    
+def lingen(t0, tf, a, c, N, l):
+    dt=(tf-t0)/N
+    m=tf*1000000
+    a=1103515245
+    c=12345
+    i=[]
+    for r in range(l):
+        i.append((a*r+c)%(m))
+    i= [ir/1000000 for ir in i ]
+    return i
+
+def triangle(x, h):
+    y=[]
+    w=4
+    if x>0 and x<w:
+            y.append((1-abs(x/w))*h)
+    else:
+            y.append(0)
+    return y
+
+def quad(x, h):
+    return -0.0001*x**2 +h
+
+def triangleinv(x):
+    w=0.01
+    h=0.01
+    return (np.sqrt((2*w/h)*(x-0.5*h*w))+w)
+    
+def accur(v, a):
+    r=intg(0,a)
+    tot= v[-1]-v[0]
+    err=abs(tot-r)/tot  
+    return err
+
+def accur1(f, a):
+    r=intg(0,a)
+    tot= f
+    err=abs(tot-r)/tot  
+    return err
+    
+def plot(v, t):
+    plt.plot(v,t)
+    
+def eulers1(N,v0,t0, tf, fv):
+    dt=(tf-t0)/N
+    v=[]
+    t=[]
+    v.append(v0)
+    t.append(t0)
+    for n in range(N):
+        t.append(t0+(n)*dt)
+        v.append(v[n]+fv(t[n])*dt)
+    plot(t,v)
+    return v
+
+def AB2(N,v0,t0, tf, fv):
+    dt=(tf-t0)/N
+    v=[]
+    t=[]
+    v.append(v0)
+    v.append(v0+fv(v[0])*dt)
+    t.append(t0)
+    t.append(t0+dt)
+    for n in range(1,N):
+        t.append(t0+(n+2)*dt)
+        v.append(v[n]+ 0.5*(3*fv(t[n])-fv(t[n-1]))*dt)
+    plot(t, v)
+    return v
+
+
+def AB4(N,v0, t0, tf, fv):
+    dt=(tf-t0)/N
+    t=[]
+    for i in range(5):
+        t.append(t0+dt*i)
+    v=AB2(4, v0, t0, dt*4, fv)
+    print(v)
+   
+    for n in range(4,N+4):
+        t.append(t[n]+ dt)
+        v.append(v[n]+ 1/(24)*(55*fv(t[n])-59*fv(t[n-1])+37*fv(t[n-2])-9*fv(t[n-3]))*dt)
+    plot(t, v)
+    return v
+
+def RK4(N,v0, t0, tf, fv):
+   dt=(tf-t0)/N
+   print(dt)
+   v=[]
+   t=[]
+   v.append(v0)
+   t.append(t0)
+   for n in range(0,N):
+       fa=fv(t[n])
+       fb=fv(t[n]+dt/2)
+       fc=fv(t[n]+dt/2)
+       fd=fv(t[n]+dt)
+       t.append(t0+(n+1)*dt)
+       v.append(v[n]+ (1/6)*(fa+2*fb+2*fc+fd)*dt)
+   plot(t,v)
+   print(t[-1])
+   return v
+
+def Monte_carlo_sq(N,v0, t0, tf, fv, l):
+    x=lingen(t0, tf, 3, 5,N , l )
+    y=lingen(t0, 1/np.sqrt(2*math.pi), 3, 5,N , l )
+    
+    yi = [fv(xi) for xi in x]
+    fsum=0
+    for i in range(len(x)):
+        if fv(x[i])>y[i]:
+            fsum+=1
+    return fsum*((1/np.sqrt(2*math.pi))*(tf-t0)/l)
+
+
+def Monte_carlo_tr(N,v0, t0, tf, fv, l, A):
+    N=N+1000
+    l=l+1000
+    x=rej(1/np.sqrt(2*math.pi), t0, tf, N,l, triangle)
+    #plt.show()
+    #plt.scatter(x,  tri)     
+    y=lingen(t0, 1/np.sqrt(2*math.pi), 3, 5,N, len(x) )
+    #plt.show()
+    #plt.scatter(x,y)
+    #yi = [fv(xi) for xi in x]
+    #plt.scatter(x, yi)
+
+    fsum=0
+    for i in range(len(x)):
+        if fv(x[i])>y[i]:
+            fsum+=1
+    ar=10*(tf-t0)/np.sqrt(2*math.pi)   
+
+     
+    return fsum*ar/l
+
+def Monte_carlo_qu(N,v0, t0, tf, fv, l, A):
+    N=N+1000
+    l=l+1000
+    x=rej(1/np.sqrt(2*math.pi), t0, tf, N,l, quad)
+    #plt.show()
+    #plt.scatter(x,  tri)     
+    y=lingen(t0, 1/np.sqrt(2*math.pi), 3, 5,N, len(x) )
+   
+    yi = [fv(xi) for xi in x]
+    
+
+    fsum=0
+    for i in range(len(x)):
+        if fv(x[i])>y[i]:
+            fsum+=1
+    ar=6/np.sqrt(2*math.pi)-0.04*9      
+    return fsum*ar/l
+
+#Basically need to write out steps to feel more comfy but i get the idea
+
+def rej(c, t0, tf, N, l, f):
+    x=lingen(t0,tf , 3, 5,N , l )
+    y=lingen(0, c, 3, 5,N, l )
+    final=[]
+    for i in range(N):
+       if f(x[i], c)>y[i]:
+           final.append(x[i])
+    return final
+        
+    
+        
+        
+def tryAll(N, a):
+    te=[]
+    start=datetime.now()
+    e1=eulers1(N, 0, 0, a, g)
+    te.append(datetime.now()-start)
+    ae1=accur(e1, a)
+    print("Eulers error: ", ae1)
+    start=datetime.now()
+    ab2=AB2(N, 0, 0, a, g)
+    te.append(datetime.now()-start)
+    aab2=accur(ab2, a)
+    print("AB2 error: ", aab2)
+    start=datetime.now()
+    ab4=AB4(N, 0, 0, a, g)
+    te.append(datetime.now()-start)
+    aab4=accur(ab4, a)
+    print("ab4 error: ", aab4)
+    start=datetime.now()
+    rk4= RK4(N, 0, 0, a, g)
+    te.append(datetime.now()-start)
+    ark4=accur(rk4, a)
+    print("rk4 error: ", ark4)
+    start=datetime.now()
+    mc= Monte_carlo_sq(N, 0,0, a, g, N)
+    te.append(datetime.now()-start)
+    amc=accur1(mc, a)
+    print("mc error: ", amc)
+    start=datetime.now()
+    mctri= Monte_carlo_tr(N, 0,0, a, g, N, 1)
+    te.append(datetime.now()-start)
+    amctri=accur1(mctri, a)
+    print("mc tri error: ", amctri)
+    start=datetime.now()
+    mcquad= Monte_carlo_qu(N, 0,0, a, g, N, 1)
+    te.append(datetime.now()-start)
+    amcquad=accur1(mcquad, a)
+    
+    print("mc qu error: ", amcquad)
+    return ae1, aab2, aab4, ark4, amc, amctri, amcquad, te
+
+#%% Guassian Integration - Initial plots and testing
+#2
+ll=[]
+f=[]
+ab=[1,2,3,4,5]
+aa=[]
+aa=[10000, 9500, 9000, 8000, 7000, 6000, 5000, 4000, 3000, 2000, 1000, 500, 300,100]
+for a in aa:
+    ll.append(tryAll(a, 5))
+ll= list(zip(*ll))
+times=ll.pop()
+times=zip(*times)
+print(ll)
+labs=["Eulers First Order","AB2","AB4","RK4","Monte-Carlo, Square", "Monte-Carlo, Triangle", "Monte-Carlo, Quadratic" ]
+plt.show()
+lr=[]
+for a in ab:
+    lr.append(tryAll(2000, a))
+lr= list(zip(*lr))
+times1=lr.pop()
+times1=zip(*times1)
+
+ti=[]
+for t in times:
+    ti.append([ti.microseconds for ti in t])
+
+
+
+#ll[-1]= [l/200 for l in ll[-1]]    
+#ll[-2]= [l/200 for l in ll[-2]] 
+'''   
+for r in range(1,4):
+    print(r, labs[-r])
+    plt.plot(aa,ti[-r], label=labs[-r] )
+    '''
+plt.plot(aa,ti[-1], label=labs[-1], color='r')
+plt.plot(aa,ti[-3], label=labs[-3], color='b' )
+plt.title("MC Methods Run Times over Changing Sample Sizes")
+plt.xlabel("Number of Samples")
+plt.ylabel("Run Times (Microseconds)")
+plt.legend()
+plt.show()
+
+for r in range(len(ll)-3):
+    print(r)
+
+    plt.plot(aa,ti[r], label=labs[r] )
+
+plt.title("ODE Methods Run Times over Changing Step Sizes")
+plt.xlabel("Number of Steps")
+plt.ylabel("Run Times in Microseconds")
+plt.legend()
+plt.show()
+
+for r in range(0, len(ll)-3):
+    print(r)
+    ll[r]=[math.log10(l) for l in ll[r]]
+    plt.plot(ti[r],ll[r], label=labs[r] )
+
+plt.title("Run Times against Percentage Errors with Changing Steps")
+plt.xlabel("Run Times over Changing Steps")
+plt.ylabel("Log Base 10 Percentage Error over Changing Steps")
+plt.legend()
+plt.show()
+for r in range(len(ll)-3):
+    print(r)
+    lr[r]=[math.log10(l) for l in lr[r]]
+    plt.plot(ab,lr[r], label=labs[r] )
+    
+
+plt.title("Accuracy Over Changing Range of Integration")
+plt.xlabel("Integrating range")
+plt.ylabel("log10 Percentage Error")
+plt.legend()
+plt.show()
+
+  
+for r in range(1,4):
+    print(r, labs[-r])
+    plt.plot(aa,ll[-r], label=labs[-r] )
+
+
+plt.title("MC Methods Accuracy over changing A")
+plt.xlabel("Integrating range")
+plt.ylabel("Percentage Error")
+plt.legend()
+plt.show()
+
+for r in range(len(ll)-3):
+    print(r)
+    
+    plt.plot(ab,lr[r], label=labs[r] )
+
+plt.title("Accuracy over Changing Range of Integration")
+plt.xlabel("Integrating Range (Integrating up to these Values)")
+plt.ylabel("Log Base 10 Percentage Error")
+plt.legend()
+plt.show()
+
+ll=[]
+f=[]
+aa=[ 400,450, 460, 500,600, 800, 1000,1500, 2000,2500, 5000, 6000, 7000, 8000, 9000,  10000]
+
+for n in aa:
+    ll.append(tryAll(n, 5))
+ll= list(zip(*ll))
+times=ll.pop()
+times=zip(*times)
+plt.show()
+for r in range(len(ll)-3):
+    print(r)
+    
+    plt.plot(aa,ll[r], label=labs[r] )
+
+plt.title("Accuracy over changing N")
+plt.xlabel("Number of Runs")
+plt.ylabel("Percentage Error")
+plt.legend()
+plt.show()
+
+ll[-1]= [l/14 for l in ll[-1]]    
+#ll[-2]= [l/10 for l in ll[-2]]    
+'''
+for r in range(2,4):
+    print(r, labs[-r])
+    ll[-r]=[math.log10(l) for l in ll[-r]]
+    plt.plot(aa,ll[-r], label=labs[-r] )
+'''
+#ll[-1]=[math.log10(l) for l in ll[-1]]
+#ll[-3]=[math.log10(l) for l in ll[-2]]
+plt.plot(aa,ll[-1], label=labs[-1], color='r')
+plt.plot(aa,ll[-3], label=labs[-3], color='b' )
+plt.title("MC Methods Accuracy over Changing Samples")
+plt.xlabel("Number of Samples")
+plt.ylabel("log10 Percentage Error")
+plt.legend()
+plt.show()
+
+for r in range(len(ll)-3):
+    print(r)
+    ll[r]=[math.log10(l) for l in ll[r]]
+    plt.plot(aa,ll[r], label=labs[r] )
+
+plt.title("Percentage Error Over Changing Number of Steps")
+plt.xlabel("Number of Steps (Inversely Proportional to Step Size)")
+plt.ylabel("Log 10 of Percentage Error")
+plt.legend()
+plt.show()
+
+
+
+
+#%% Guassian Integration - a to inf
+#3
+def accuri(v, ti, tf):
+    r=intg(ti,tf)
+    tot= v[-1]-v[0]
+    err=abs(tot-r)/tot  
+    return err
+def accurinf(tot, ti, tf):
+    r=intg(ti,tf)
+    err=abs(tot-r)/(tot)  
+    return err
+
+
+
+    
+def tryRK4(N, ti, tf):
+
+    rk4= RK4(N, 0, ti, tf, g)
+    ark4=accuri(rk4, ti, tf)
+    print(rk4)
+    print("rk4 error: ", ark4)
+    return  ark4
+
+def tryRK4inf(N, ti, tf):
+    rk4= RK4(N, 0, ti, tf, g)
+    val=rk4[-1]-rk4[0]
+    r=60*ti**2
+    integral=0.5-val
+    ark4=accurinf(integral, 0, ti)
+    
+    
+    print(rk4)
+    print("rk4 error: ", ark4)
+    return  ark4/r
+
+
+a=[1,2,3,4,5]
+rk1=[]
+rk2=[]
+for ai in a:
+    rk1.append(tryRK4(1000, 0, ai))
+    rk2.append(tryRK4inf(10000, ai, 100))
+plt.show()
+rk1=[math.log10(r) for r in rk1]
+rk2=[math.log10(r) for r in rk2]
+plt.plot(a, rk1, label="From 0 to Our Range Maximum", color='r')
+plt.plot(a, rk2, label="From Our Range Maximum to 'Infinity'")
+plt.title("Comparing RK4 Integration Range Manipulation Methods")
+plt.xlabel("Range of Integration")
+plt.ylabel("Log 10 Percentage Error")
+plt.legend()
+plt.show()
+
+
+
+
+#%% Adding in a varying step size to my RK4
+#4
+
+    
+def pdf2(x): 
+    df1= (g(x)-g(x-0.1))/0.1
+    df2=((g(x-0.1)-g(x-0.2))/0.1)
+    dg= (df1-df2)/0.2
+    return dg
+
+def gent(dt, tf):
+    tn=[]
+    dfmax=0.5
+    t=0
+    while t<(tf-dt):
+        dfp= abs(pdf2(t))/dfmax
+        tn.append(dt/(dfp+0.1))
+        t=t+tn[-1]
+    tn.append(tf-t)
+    t=t+tn[-1]
+    return tn
+    
+
+
+       
+def RK4sb(N,v0, t0, tf, fv):
+   dt=(tf-t0)/N
+   print(dt)
+   v=[]
+   t=[]
+   v.append(v0)
+   t.append(t0)
+   d=gent(dt, tf)
+   for n in range(len(d)):
+       fa=fv(t[n])
+       fb=fv(t[n]+d[n]/2)
+       fc=fv(t[n]+d[n]/2)
+       fd=fv(t[n]+d[n])
+       t.append(t[n]+d[n])
+       v.append(v[n]+ (1/6)*(fa+2*fb+2*fc+fd)*d[n])
+   return v
+       
+  
+rk4= RK4sb(10000, 0, 0, 5, g)
+ark4=accur(rk4, 5)
+print("rk4s error: ", ark4)
+
+
+rk4= RK4(10000, 0, 0, 5, g)
+ark4=accur(rk4, 5)
+print("rk4 error: ", ark4)
+
+
+
+
+def rkComparea(a):
+    rk4= RK4sb(10000, 0, 0, a, g)
+    ark41=accur(rk4, a)
+    print("rk4s error: ", ark41)
+
+
+    rk4= RK4(10000, 0,0 , a, g)
+    ark4=accur(rk4, a)
+    print("rk4 error: ", ark4)
+    return ark41, ark4
+
+def rkCompareN(N):
+    rk4= RK4sb(N, 0, 0, 5, g)
+    ark41=accur(rk4, 5)
+    print("rk4s error: ", ark41)
+
+
+    rk4= RK4(N, 0,0 , 5, g)
+    ark4=accur(rk4, 5)
+    print("rk4 error: ", ark4)
+    return ark41, ark4
+
+def rkComparet(a):
+    te=[]
+    start=datetime.now()
+        
+    rk4= RK4sb(10000, 0, 0, a, g)
+    te.append(datetime.now()-start)
+    ark41=accur(rk4, a)
+    print("rk4s error: ", ark41)
+    start=datetime.now()
+
+    rk4= RK4(10000, 0,0 , a, g)
+    te.append(datetime.now()-start)
+    ark4=accur(rk4, a)
+    print("rk4 error: ", ark4)
+    return te[0].microseconds, te[1].microseconds
+
+start=datetime.now()
+    
+def complot(g, aa):  
+    ll=[]
+    f=[]
+    for a in aa:
+        ll.append(g(a))
+    plt.show()
+    ll= list(zip(*ll))
+    plt.plot(aa,ll[0], label='Variable Step Sizes')
+    plt.plot(aa,ll[1], label= 'Standard Step Sizes')
+    print(ll)  
+    plt.title("Run Time for Variable Step Size function")
+    plt.xlabel("Number of Steps taken")
+    plt.ylabel("Run Time (Microseconds)")
+    plt.legend()
+    plt.show() 
+    
+
+    
+    
+    
+a1=[1,2,3,4,5]
+aa=[10000, 9500,9000, 8000, 7000, 6000, 5000, 4000, 3000, 2000] 
+''' 
+complot(rkComparea, a1)
+complot(rkCompareN, a2)
+complot(rkComparet, a1)
+
+'''
+plt.show()
+ll=[]
+ll1=[]
+ll2=[]
+for a in aa:
+    ll.append(rkCompareN(a))   
+    ll1.append(rkComparet(a))
+    #ll2.append(rkComparea(a))
+print(ll ,ll1)
+ll= list(zip(*ll))
+ll[0]=[math.log10(l) for l in ll[0]]
+ll1= list(zip(*ll1))
+ll[1]=[math.log10(l) for l in ll[1]]
+plt.show() 
+plt.show()
+plt.scatter(ll1[0],ll[0],  label='Variable Step Sizes', color='tab:blue')
+plt.scatter( ll1[1],ll[1],label='Fixed Step Sizes', color='tab:red')
+plt.title("Run Time for Variable Step Size function")
+plt.xlabel("Run Times (Microseconds)")
+plt.ylabel("Log Base 10 Percentage Error")
+plt.legend()
+
+
+'''
+aa=[]
+ll=[]
+for a in range(1,100):
+    
+    aa.append(a/20)
+    ll.append(dg(a/20))
+plt.plot(aa,ll)
+plt.show()
+
+ll=[]
+f=[]
+aa=[]
+for a in range(0,6):
+    aa.append(a)
+    ll.append(rkCompare(a))
+plt.show()
+ll= list(zip(*ll))
+plt.plot(aa,ll[0], label='Variable Step Sizes')
+plt.plot(aa,ll[1], label= 'Standard Step Sizes')
+print(ll)  
+plt.title("Accuracy over changing A")
+plt.xlabel("Integrating range")
+plt.ylabel("Percentage Error")
+plt.legend()
+plt.show()
+
+
+    
+'''
+
+
+#%% Finding Upper and Lower Cuts
+#5
+def higgs(m):
+    #A=474.1415
+    mh=125.1
+    s=1.4
+    h=(470/(np.sqrt(2*math.pi)*s))*math.exp(-(m-mh)**2/(2*s**2))
+    return h
+
+def B(m):
+    mh=125.1
+    A=1500
+    k=20
+    u=125.1
+    s=1.4
+    B = A*math.exp(-(m-mh)/k)
+
+    return B
+def tot(m):
+    ttal= higgs(m)+B(m)
+    return ttal
+
+
+def XX(x,y):
+    B = x**2 +y**2
+    return B
+
+def lingen(t0, tf, a, c, N, l):
+    dt=(tf-t0)/N
+    m=tf*1000000
+    a=1103515245
+    c=12345
+    i=[]
+    for r in range(l):
+        i.append((a*r+c)%(m))
+    i= [ir/1000000 for ir in i ]
+    return i
+
+
+def RK4(N,v0, t0, tf, fv):
+   dt=(tf-t0)/N
+   v=[]
+   t=[]
+   v.append(v0)
+   t.append(t0)
+   for n in range(0,N):
+       fa=fv(t[n])
+       fb=fv(t[n]+dt/2)
+       fc=fv(t[n]+dt/2)
+       fd=fv(t[n]+dt)
+       t.append(t0+(n+1)*dt)
+       v.append(v[n]+ (1/6)*(fa+2*fb+2*fc+fd)*dt)
+   return v[-1]-v0
+
+def Nb(ml, mu):
+    return RK4(10000, 0, ml, mu, B)
+
+def select(ml, mu):
+    Nb= RK4(10000, 0, ml, mu, B)
+    Nh= RK4(10000, 0, ml, mu, higgs)
+    return Nh/np.sqrt(Nb)
+
+def fDl(ml, mu, d):
+    dfl= (select(ml+d, mu)- select(ml,mu))/d
+    return dfl
+    
+def fDu(ml, mu, d):
+    dfu= (select(ml, mu+d)- select(ml,mu))/d
+    return dfu
+    
+def grad(ml, mu, N):
+    x=[]
+    mu1=[]
+    ml1=[]
+    a=0
+    d=0.0001
+    for n in range(N):
+        du=fDu(ml,mu,0.002)
+        dl=fDl(ml,mu,0.002)
+      
+        mu=mu-du*d
+        ml=ml-dl*d
+        if len(x)>0:
+           a=x[-1]
+        x.append(select(ml, mu))
+        mu1.append(mu)
+        ml1.append(ml)
+        if ml>mu or x[-1]-a<0:
+            print(x[-1])
+            return ml,mu, x, mu1
+        print(x[-1], x[-1]-a, ml, mu)
+        
+    return ml, mu, x, mu1, ml1
+          
+    
+
+ #%% Plotting accross landscape
+#6
+def lingen(t0, tf, a, c, N, l):
+    dt=(tf-t0)/N
+    m=tf*1000000
+    a=1103515245
+    c=12345
+    i=[]
+    for r in range(l):
+        i.append((a*r+c)%(m))
+    i= [ir/1000000 for ir in i ]
+    return i
+
+
+def plotting():
+     mlv=np.linspace(100, 150, num=100)
+     muv=np.linspace(100, 150, num=100)
+     fu=[]
+     mu=[]
+     ml=[]
+     for m in range(len(mlv)):
+         fu.append(select(mlv[m]-5, mlv[m]))
+         ml.append(mlv[m]-5)
+     mlv1=np.linspace(100, 150, num=100)
+     
+     
+     fu1=[]
+     for m in range(len(mlv1)):
+          fu1.append(select(mlv1[m],mlv1[m]+5))
+          mu.append(mlv1[m]+5)
+             
+     
+     plt.plot(mlv, fu, label='Changing upper cut')
+     plt.plot(mlv1, fu1, label='Changing Lower cut')
+     plt.axvline(x=125.1, linestyle= '--')
+     plt.title("Changing Cut Values With cute seperation of - 5")
+     plt.legend()
+     plt.xlabel("Mu Value (GeV/c**2)")
+     plt.ylabel("Significance")
+     plt.show()
+     #mlv=np.append(mlv, mu)
+     #mlv1= np.append(mlv1, ml)
+     #fu=fu.append(fu1)
+     return mlv, ml, fu, mlv1, mu, fu1
+
+    
+def plotter(mu, ml, f):
+    
+    plt.axvline(x=125.1, linestyle= '--')
+    plt.title("Changing Cut Values With cute seperation of - 5")
+    plt.legend()
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ax.set_ylabel("Mu Value (GeV/c**2)")
+    ax.set_xlabel("Ml Value (GeV/c**2)")
+    ax.set_zlabel("Significance")
+    ax.set_title("Random Samples of our Range of Interest")
+    ax.scatter(mu, ml, f, 'gray')
+    
+mu, ml, f, mu1, ml1, f1 =plotting() 
+plotter(mu, ml, f)
+
+ml=[]
+mu=[]
+fu=[]
+
+'''
+N=100
+rands=lingen(0, 50, 5, 5, N, N)
+rands=[r+100 for r in rands]
+mu=rands
+rands=lingen(0, 50, 5, 5, N, N)
+rands=[r+100 for r in rands]
+for n in range(N): 
+    ml.append(lingen(0, 150-mu[n], 5, 5, 1, 1))+100
+    fu.append(select(ml[-1],mu[n]))
+plotter(mu, ml, fu)
+    
+ '''   
+
+
+    
+    
+#%% Finding Upper and Lower Cuts
+#7
+Ml =  123.23
+Mu =  127.15
+'''
+Ml =  123.23752007599450
+Mu =127.15848406099280
+
+'''
+def run():
+    a=grad(Ml, Mu , 1000)
+    m=np.linspace(100, 150, num=100)
+    y=[tot(mi) for mi in m]
+    plt.plot(m, y)
+    plt.title('Optimal Cuts over our Distribution')
+    plt.axvline(x=a[0], linestyle= '--', label='Upper cut', color='r')
+    plt.axvline(x=a[1], linestyle='--', label='Lower cut', color='r')
+    plt.xlabel("Mass Value (GeV/c**2)")
+    plt.ylabel("Number of Detected particles")
+    plt.legend()
+    plt.show()
+    
+run()
+
+
+
+#%% Testing changes on inputs 
+#8
+Ml =  123.237520
+Mu =127.158484
+
+
+def higgsuncc(m):
+    mh=125.1
+    s=1.4
+    A=470
+    #A=386.5
+    h= A*math.exp(-(m-mh)**2/(2*s**2))/(np.sqrt(2*math.pi*s))
+    return h
+
+def selectm(ml, mu, dNb):
+    Nb= RK4(10000, 0, ml, mu, B)
+    Nh= RK4(10000, 0, ml, mu, higgs)
+    return (Nh-dNb)/np.sqrt(Nb), Nh, Nb
+
+
+dNb=0
+uncsig=selectm(Ml, Mu, dNb)
+amount=uncsig[2]
+signorm=select(Ml, Mu)
+
+
+dif=(signorm-uncsig)/(signorm)
+
+print(uncsig)
+
+Nh1= 393.65473111478246
+
+#If it averages from 382 to 383 will still detect a signal - 
+
+
+
+#%% 10::: Testing changes on inputs Ml = 123.22864, Mu = 127.149925
+
+def TRK4(N,v0, t0, tf, fv, var):
+   dt=(tf-t0)/N
+   v=[]
+   t=[]
+   v.append(v0)
+   t.append(t0)
+   for n in range(0,N):
+       fa=fv(t[n], var)
+       fb=fv(t[n]+dt/2, var)
+       fc=fv(t[n]+dt/2, var)
+       fd=fv(t[n]+dt, var)
+       t.append(t0+(n+1)*dt)
+       v.append(v[n]+ (1/6)*(fa+2*fb+2*fc+fd)*dt)
+   return v[-1]-v0
+
+#%% 11
+#127.14991725213733 123.22864711895092
+#Higgs mass uncertainty, 
+
+Ml =  123.23752007599450
+Mu =127.15848406099280
+
+#Essentially just shifting our higs funcs central mass a little - changes the significance but only by 0.01% at its largest
+def higgsunc(m, i):
+    A=470
+    mh=125.1
+    mhn=mh-i
+    s=1.4
+    h= A*math.exp(-(m-mhn)**2/(2*s**2))/(np.sqrt(2*math.pi)*s)
+    return h
+
+def selectm(ml, mu, var):
+    
+    Nb= RK4(10000, 0, ml, mu, B)
+    Nh= TRK4(10000, 0, ml, mu, higgsunc, var)
+    return Nh,  Nh/np.sqrt(Nb)
+
+uncsig=selectm(Ml, Mu, 0.2)
+signorm=select(Ml, Mu)
+difn= (393.65-uncsig[0])
+dif=(signorm-uncsig[1])/(signorm)
+print(uncsig, signorm)
+unc=np.linspace(-0.2, 0.2, num=100)
+final=[]
+f2=[]
+for u in unc:
+    final.append(selectm(Ml, Mu, u)[1])
+    f2.append(selectm(Ml, Mu, u)[0])
+
+plt.plot(unc, final)
+plt.show()
+unc=[125.1 -u for u in unc]
+nhnew=sum(f2)/len(f2)
+plt.plot(unc, f2)
+plt.title('Changes in Nh as a Result of Higgs Mass Uncertainty')
+plt.axhline(393.65473111478246, linestyle= '--', label='Average Nh without uncertainty considerations', color='r')
+plt.axhline(nhnew, linestyle= '--', label='Average Nh with uncertainty considerations', color='b')
+plt.xlabel("Higgs Mass in GeV/c**2")
+plt.ylabel("Number of Higgs Predicted")
+plt.legend()
+plt.show()
+print((max(f2), min(f2), 393.65473111478246), sum(f2)/len(f2))
+
+#%% 12
+#Testing changes on inputs Ml = 123.22864, Mu = 127.149925
+#4% of higgs shifted to 124.5 and resolution degraded to 2.6
+def higgsdef(m, i):
+    mh=125.1
+    mhs=124.5
+    p=0.03
+    s=1.4
+    ss=2.6
+    h= (470*math.exp(-(m-mh)**2/(2*s**2))/(np.sqrt(2*math.pi)*s))*(1-i)
+    hs= (470*math.exp(-(m-mhs)**2/(2*s**2))/(np.sqrt(2*math.pi)*ss))*(i-i**2)
+    return h+hs
+
+def selectm(ml, mu, i):
+    Nb= RK4(10000, 0, ml, mu, B)
+    Nh= TRK4(10000, 0, ml, mu, higgsdef, i)
+    return Nh,  Nh/np.sqrt(Nb)
+
+uncsig=selectm(Ml, Mu, 0.04)
+
+signorm=select(Ml, Mu)
+difn= (393.712-uncsig[0])/393.71
+dif=(signorm-uncsig[1])/(signorm)
+
+print(uncsig)
+unc=np.linspace(0, 0.04, num=100)
+final=[]
+f2=[]
+for u in unc:
+    final.append(selectm(Ml, Mu, u)[1])
+    f2.append(selectm(Ml, Mu, u)[0])
+
+plt.plot(unc, final)
+plt.show()
+
+plt.plot(unc, f2)
+nhnew=sum(f2)/len(f2)
+plt.title('Changes in Nh as a Result of Interactions with Detector Material')
+plt.axhline(393.65473111478246, linestyle= '--', label='Average Nh without uncertainty considerations', color='r')
+plt.axhline(nhnew, linestyle= '--', label='Average Nh with uncertainty considerations', color='b')
+plt.xlabel("Fraction of Higgs photons Interations")
+plt.ylabel("Number of Higgs Predicted")
+plt.legend()
+plt.show()
+print((max(f2), min(f2), 393.65473111478246), sum(f2)/len(f2))
+
+
+#%% 13
+#Testing changes on inputs Ml = 123.22864, Mu = 127.149925
+#theory predicting higgs is +/1 3%
+
+def higgsdef1(m, unc):
+    mh=125.1
+    s=1.4
+    mh=mh-unc
+    h= (470*math.exp(-(m-mh)**2/(2*s**2))/(np.sqrt(2*math.pi)*s))
+    return h*(1+unc)
+
+def selectm(ml, mu, i):
+   
+    Nh= TRK4(10000, 0, ml, mu, higgsdef1, i)
+    Nb= RK4(10000, 0, ml, mu, B)
+    return Nh,  Nh/np.sqrt(Nb)
+uncsig=selectm(Ml, Mu, 0.1)
+signorm=select(Ml, Mu)
+difn= (393.712-uncsig[0])/393.71
+dif=(signorm-uncsig[1])/(signorm)
+
+print(uncsig)
+unc=np.linspace(-0.03, 0.03, num=100)
+final=[]
+f2=[]
+for u in unc:
+    final.append(selectm(Ml, Mu, u)[1])
+    f2.append(selectm(Ml, Mu, u)[0])
+
+plt.plot(unc, final)
+plt.show()
+unc=[(u+1)*393.654 for u in unc]
+nhnew=sum(f2)/len(f2)
+plt.plot(unc, f2)
+plt.title('Changes in Nh as of Uncertainty in Theory Predicting Higgs')
+plt.axhline(393.65473111478246, linestyle= '--', label='Average Nh without uncertainty considerations', color='r')
+plt.axhline(nhnew, linestyle= '--', label='Average Nh with uncertainty considerations', color='b')
+plt.xlabel("Number of Higgs Created")
+plt.ylabel("Number of Higgs Predicted")
+plt.legend()
+plt.show()
+print((max(f2), min(f2), 393.65473111478246), sum(f2)/(len(f2)))
+
+
+
+#%% 14
+
+#`Re-estimating probability 5 -sigma signal
+def higgsuncc(m):
+    mh=125.1
+    s=1.4
+    A=470
+    #A=386.5
+    h= A*math.exp(-(m-mh)**2/(2*s**2))/(np.sqrt(2*math.pi*s))
+    return h
+
+
+def selectm(ml, mu, dNb):
+    Nb= RK4(10000, 0, ml, mu, B)
+    Nh= RK4(10000, 0, ml, mu, higgs)-4.7
+    return (Nh-dNb)/np.sqrt(Nb), Nh, Nb
+
+ar=selectm(Ml, Mu,6.3 )
+print(ar)
+signorm=select(Ml, Mu)
+dif=(signorm-ar)/(signorm)
+
+
+
