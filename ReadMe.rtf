@@ -1,41 +1,30 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2580
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
-{\colortbl;\red255\green255\blue255;}
-{\*\expandedcolortbl;;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
-\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+The code is messy but arranged in sections - so each bit can be checked in line with the report. 
+(Must be run linearly as I reuse function names, so if you go back and re-run an earlier section you need to start right from the beginning and run all preceding segments)
 
-\f0\fs24 \cf0 The code is messy but arranged in sections - so each bit can be checked in line with the report. \
-(Must be run linearly as I reuse function names, so if you go back and re-run an earlier section you need to start right from the beginning and run all preceding segments)\
-\
-Seg1. Sets up environment\
-\
-Seg.2 Sets up integration functions to be tested and Error testing\
-\
-Seg.3 Produces useful graphs that vary the parameters for Monte Carlo and ODE methods - does not produce these graphs in any particular order. \
-\
-Seg. 4 Tests out integrating from a to infinity and taking this value away from 0.5 - our expected 0 to infinity compared against our 0 to a integrations - this does not include limit changes - as this is more for playing around with various a and N over this range. \
-\
-Seg. 5 Variable step size RK4 implementation. We have a change in gradient finding function - a function that generates our dt values for each point - based on a weighting off our original dt values and our gradient evaluations\
-\
-seg. 6: this sets up our Higgs function and background and our optimisation function under \'91grad\'92. \
-\
-Seg 7: plotting across landscape in different ways - used a randomiser for our potting - commented out for a clearer view - but can be uncommented and used. \
-\
-Seg. 8: employing our optimiser to find cuts - using the ml and mu we found as starting points - as a result if run it will terminate pretty immediately. Or can start from 123.23 and 127.15 - I\'92ve got the optimiser set for tiny little steps so we can get accurate values \
-\
-Seg.9: Initial tests on inputs - finding our background and Higgs values for our cuts\
-\
-seg. 10: sets up a testing RK4 that allows us to vary some of its factors and test out uncertainties\
-\
-seg. 11: shifting mass \
-\
-\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
-\cf0 seg. 12:  result of interaction with detector\
-\
-seg. 13: Uncertainty in Higgs theory\
-\
-Seg 14: re-estimating probability by seeing how much background must change by to result in sigma falling below 5\
-\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
-\cf0 \
-}
+Seg1. Sets up environment
+
+Seg.2 Sets up integration functions to be tested and Error testing
+
+Seg.3 Produces useful graphs that vary the parameters for Monte Carlo and ODE methods - does not produce these graphs in any particular order. 
+
+Seg. 4 Tests out integrating from a to infinity and taking this value away from 0.5 - our expected 0 to infinity compared against our 0 to a integrations - this does not include limit changes - as this is more for playing around with various a and N over this range. 
+
+Seg. 5 Variable step size RK4 implementation. We have a change in gradient finding function - a function that generates our dt values for each point - based on a weighting off our original dt values and our gradient evaluations
+
+seg. 6: this sets up our Higgs function and background and our optimisation function under ‘grad’. 
+
+Seg 7: plotting across landscape in different ways - used a randomiser for our potting - commented out for a clearer view - but can be uncommented and used. 
+
+Seg. 8: employing our optimiser to find cuts - using the ml and mu we found as starting points - as a result if run it will terminate pretty immediately. Or can start from 123.23 and 127.15 - I’ve got the optimiser set for tiny little steps so we can get accurate values 
+
+Seg.9: Initial tests on inputs - finding our background and Higgs values for our cuts
+
+seg. 10: sets up a testing RK4 that allows us to vary some of its factors and test out uncertainties
+
+seg. 11: shifting mass 
+
+seg. 12:  result of interaction with detector
+
+seg. 13: Uncertainty in Higgs theory
+
+Seg 14: re-estimating probability by seeing how much background must change by to result in sigma falling below 5
